@@ -13,13 +13,20 @@ import {
   UserProfile,
 } from '@shared/types';
 import { getDictionary, isRtl } from '../locales';
-import { auth, loginWithGoogle, logoutUser, testConnection } from '../lib/firebase';
+import {
+  auth,
+  createDefaultProfile,
+  loadUserProfile,
+  loginWithGoogle,
+  logoutUser,
+  signInWithEmail,
+  signUpWithEmail,
+  testConnection,
+} from '../lib/firebase';
 import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 
 export interface AppContextType {
   currentUser: UserProfile;
-  setCurrentUser: (user: UserProfile) => void;
-  availableUsers: UserProfile[];
   currentLanguage: SupportedLanguage;
   setLanguage: (lang: SupportedLanguage) => void;
   dict: ReturnType<typeof getDictionary>;
@@ -45,83 +52,40 @@ export interface AppContextType {
   advanceDemoClock: (hours: number) => Promise<void>;
   activeView: string;
   setActiveView: (view: string) => void;
+  isAuthenticated: boolean;
+  isLoadingAuth: boolean;
+  signUp: (params: {
+    email: string;
+    password: string;
+    displayName: string;
+    role: Role;
+    language: SupportedLanguage;
+  }) => Promise<{ success: boolean; error?: string }>;
+  signIn: (params: {
+    email: string;
+    password: string;
+  }) => Promise<{ success: boolean; error?: string; role?: Role }>;
   firebaseUser: FirebaseUser | null;
-  firebaseReady: boolean;
   signInWithGoogle: () => Promise<void>;
   signOutUser: () => Promise<void>;
 }
 
-const DEFAULT_USERS: UserProfile[] = [
-  {
-    uid: 'user_patient_tariq',
-    email: 'tariq.patient@screenlit.health',
-    displayName: 'Tariq Al Mahmoud',
-    role: 'patient',
-    language: 'ar',
-    linkedPatientId: 'pat_tariq_001',
-    organizationId: 'org_alamal_clinic',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    uid: 'user_caregiver_zainab',
-    email: 'zainab.caregiver@screenlit.health',
-    displayName: 'Zainab Al Mahmoud',
-    role: 'caregiver',
-    language: 'ar',
-    linkedPatientId: 'pat_tariq_001',
-    organizationId: 'org_alamal_clinic',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    uid: 'user_coordinator_fatima',
-    email: 'coordinator.fatima@screenlit.health',
-    displayName: 'Fatima Noor, RN',
-    role: 'coordinator',
-    language: 'en',
-    organizationId: 'org_alamal_clinic',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    uid: 'user_physician_amina',
-    email: 'dr.amina@screenlit.health',
-    displayName: 'Dr. Amina Al Mansoor',
-    role: 'physician',
-    language: 'en',
-    organizationId: 'org_alamal_clinic',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    uid: 'user_specialist_mwangi',
-    email: 'dr.mwangi@screenlit.health',
-    displayName: 'Dr. David Mwangi',
-    role: 'specialist',
-    language: 'sw',
-    organizationId: 'org_central_hospital',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    uid: 'user_admin_hassan',
-    email: 'admin.hassan@screenlit.health',
-    displayName: 'Hassan Al Kuwari',
-    role: 'admin',
-    language: 'en',
-    organizationId: 'org_alamal_clinic',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-];
+const GUEST_USER: UserProfile = {
+  uid: '',
+  email: '',
+  displayName: 'Guest',
+  role: 'patient',
+  language: 'en',
+  createdAt: new Date().toISOString(),
+  updatedAt: new Date().toISOString(),
+};
 
 const AppContext = createContext<AppContextType | null>(null);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const [currentUser, setCurrentUser] = useState<UserProfile>(DEFAULT_USERS[0]);
+  const [currentUser, setCurrentUser] = useState<UserProfile>(GUEST_USER);
   const [currentLanguage, setCurrentLanguage] = useState<SupportedLanguage>('en');
   const [activeCase, setActiveCase] = useState<CaseDocument | null>(null);
   const [allCases, setAllCases] = useState<CaseDocument[]>([]);
@@ -130,21 +94,94 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
   const [demoClockOffsetHours, setDemoClockOffsetHours] = useState(0);
   const [activeView, setActiveView] = useState('home');
   const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
-  const [firebaseReady, setFirebaseReady] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isLoadingAuth, setIsLoadingAuth] = useState(true);
 
+  // Register user in the in-memory server DB so they appear in the workstation
+  const registerWithServer = async (profile: UserProfile) => {
+    try {
+      await fetch('/api/users/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(profile),
+      });
+    } catch (err) {
+      console.warn('Server registration sync failed:', err);
+    }
+  };
   useEffect(() => {
-    // Validate connection to Firestore on initial application boot
     testConnection().catch((err) => {
       console.warn('Firestore initial connection check:', err);
     });
 
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setFirebaseUser(user);
-      setFirebaseReady(true);
+      if (user) {
+        let profile = await loadUserProfile(user.uid);
+        if (!profile) {
+          // Google sign in users without a Firestore profile get a default patient profile
+          profile = await createDefaultProfile(
+            user.uid,
+            user.email || '',
+            user.displayName || 'New User'
+          );
+        }
+        setCurrentUser(profile);
+        setCurrentLanguage(profile.language);
+        setIsAuthenticated(true);
+        // Sync into in-memory server DB so they appear in the workstation
+        await registerWithServer(profile);
+      } else {
+        setCurrentUser(GUEST_USER);
+        setIsAuthenticated(false);
+      }
+      setIsLoadingAuth(false);
     });
 
     return () => unsubscribe();
   }, []);
+
+  const signUp: AppContextType['signUp'] = async (params) => {
+    try {
+      const profile = await signUpWithEmail(
+        params.email,
+        params.password,
+        params.displayName,
+        params.role,
+        params.language
+      );
+      setCurrentUser(profile);
+      setCurrentLanguage(profile.language);
+      setIsAuthenticated(true);
+      await registerWithServer(profile);
+      return { success: true };
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : 'Sign up failed. Please try again.';
+      return { success: false, error: message };
+    }
+  };
+
+  const signIn: AppContextType['signIn'] = async (params) => {
+    try {
+      const profile = await signInWithEmail(params.email, params.password);
+      if (!profile) {
+        return {
+          success: false,
+          error: 'User profile not found. Please contact your administrator.',
+        };
+      }
+      setCurrentUser(profile);
+      setCurrentLanguage(profile.language);
+      setIsAuthenticated(true);
+      await registerWithServer(profile);
+      return { success: true, role: profile.role };
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : 'Sign in failed. Please try again.';
+      return { success: false, error: message };
+    }
+  };
 
   const signInWithGoogle = async () => {
     try {
@@ -161,6 +198,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
     try {
       await logoutUser();
       setFirebaseUser(null);
+      setCurrentUser(GUEST_USER);
+      setIsAuthenticated(false);
     } catch (err) {
       console.error('Failed to sign out:', err);
     }
@@ -239,8 +278,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   useEffect(() => {
-    refreshData();
-  }, [currentUser]);
+    if (isAuthenticated) {
+      refreshData();
+    }
+  }, [currentUser, isAuthenticated]);
 
   const toggleConsent = async (organizationId: string) => {
     setConsents((prev) =>
@@ -347,8 +388,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
     <AppContext.Provider
       value={{
         currentUser,
-        setCurrentUser,
-        availableUsers: DEFAULT_USERS,
         currentLanguage,
         setLanguage: setCurrentLanguage,
         dict,
@@ -366,8 +405,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
         advanceDemoClock,
         activeView,
         setActiveView,
+        isAuthenticated,
+        isLoadingAuth,
+        signUp,
+        signIn,
         firebaseUser,
-        firebaseReady,
         signInWithGoogle,
         signOutUser,
       }}

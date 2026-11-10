@@ -18,6 +18,40 @@ import {
   XCircle,
 } from 'lucide-react';
 
+// Map known seed patient IDs to display names
+const PATIENT_NAME_MAP: Record<string, string> = {
+  pat_tariq_001: 'Tariq Al Mahmoud',
+  pat_fatima_002: 'Fatima Al Zahra',
+  pat_grace_003: 'Grace Wanjiku',
+  pat_maryam_004: 'Maryam Saleh',
+  pat_ahmed_005: 'Ahmed Hassan',
+  pat_salim_006: 'Salim Al Nuaimi',
+  pat_layla_007: 'Layla Ibrahim',
+  pat_khalid_008: 'Khalid Al Dossary',
+};
+
+const OWNER_NAME_MAP: Record<string, string> = {
+  prac_dr_amina: 'Dr. Amina Al Mansoor',
+  prac_dr_mwangi: 'Dr. David Mwangi',
+  prac_coord_fatima: 'Fatima Noor, RN',
+  scheduler_daemon: 'SLA Scheduler',
+  system_engine: 'Coordination Engine',
+};
+
+const CONDITION_LABEL: Record<string, string> = {
+  hypertension: 'Hypertension',
+  colorectal_cancer: 'Colorectal Screening',
+  maternal_hypertension: 'Maternal Hypertension',
+};
+
+function getPatientName(patientId: string): string {
+  return PATIENT_NAME_MAP[patientId] || patientId;
+}
+
+function getOwnerName(ownerUid: string): string {
+  return OWNER_NAME_MAP[ownerUid] || ownerUid;
+}
+
 interface QueuesViewProps {
   cases: CaseDocument[];
   onSelectCase: (caseDoc: CaseDocument) => void;
@@ -164,7 +198,7 @@ export const QueuesView: React.FC<QueuesViewProps> = ({
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="font-mono text-xs font-bold text-slate-500">
+                      <span className="font-mono text-[10px] font-bold text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">
                         {c.id}
                       </span>
                       <span className="px-2.5 py-0.5 bg-slate-100 text-slate-800 text-xs font-bold rounded-full">
@@ -172,15 +206,15 @@ export const QueuesView: React.FC<QueuesViewProps> = ({
                       </span>
                       {c.isUrgent && (
                         <span className="px-2.5 py-0.5 bg-rose-100 text-rose-800 text-xs font-bold rounded-full">
-                          Urgent Triage
+                          Urgent
                         </span>
                       )}
                     </div>
                     <h4 className="text-base font-extrabold text-slate-900 mt-1">
-                      Patient ID: {c.patientId}
+                      {getPatientName(c.patientId)}
                     </h4>
                     <p className="text-xs text-slate-500">
-                      Condition: {c.condition} &bull; Owner: {c.ownerUid} ({c.ownerRole})
+                      {CONDITION_LABEL[c.condition] || c.condition} &bull; Owner: {getOwnerName(c.ownerUid)} ({c.ownerRole})
                     </p>
                   </div>
 

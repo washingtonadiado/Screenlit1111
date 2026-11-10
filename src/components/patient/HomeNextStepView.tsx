@@ -112,7 +112,11 @@ export const HomeNextStepView: React.FC = () => {
         {/* Card 1: Top Left - Royal Blue Card */}
         <div
           onClick={() => setActiveView('result')}
-          className="bg-[#3b5bf5] text-white rounded-3xl p-4.5 flex flex-col justify-between h-40 shadow-lg relative overflow-hidden group hover:scale-[1.02] transition cursor-pointer"
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => e.key === 'Enter' && setActiveView('result')}
+          aria-label="View screening result"
+          className="bg-[#3b5bf5] text-white rounded-3xl p-4.5 flex flex-col justify-between h-40 shadow-lg relative overflow-hidden group hover:scale-[1.02] active:scale-[0.97] transition cursor-pointer focus:outline-none focus:ring-2 focus:ring-white/40"
         >
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-1.5">
@@ -139,7 +143,11 @@ export const HomeNextStepView: React.FC = () => {
         {/* Card 2: Top Right - Dark Charcoal Glass Card */}
         <div
           onClick={() => setActiveView('readings')}
-          className="bg-[#161c28] border border-slate-800/80 rounded-3xl p-4.5 flex flex-col justify-between h-40 hover:border-slate-700 transition cursor-pointer group hover:scale-[1.02]"
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => e.key === 'Enter' && setActiveView('readings')}
+          aria-label="Log blood pressure reading"
+          className="bg-[#161c28] border border-slate-800/80 rounded-3xl p-4.5 flex flex-col justify-between h-40 hover:border-slate-700 active:scale-[0.97] transition cursor-pointer group hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-slate-600"
         >
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-1.5">
@@ -166,7 +174,11 @@ export const HomeNextStepView: React.FC = () => {
         {/* Card 3: Bottom Left - Deep Forest Tint Card */}
         <div
           onClick={() => setActiveView('wearable')}
-          className="bg-[#121c1c] border border-emerald-900/40 rounded-3xl p-4.5 flex flex-col justify-between h-40 hover:border-emerald-700/60 transition cursor-pointer group hover:scale-[1.02]"
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => e.key === 'Enter' && setActiveView('wearable')}
+          aria-label="View wearable health signals"
+          className="bg-[#121c1c] border border-emerald-900/40 rounded-3xl p-4.5 flex flex-col justify-between h-40 hover:border-emerald-700/60 active:scale-[0.97] transition cursor-pointer group hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-emerald-900"
         >
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-1.5">
@@ -196,7 +208,16 @@ export const HomeNextStepView: React.FC = () => {
             const el = document.getElementById('feeling-checkin-section');
             if (el) el.scrollIntoView({ behavior: 'smooth' });
           }}
-          className="bg-[#192238] border border-blue-500/30 rounded-3xl p-4.5 flex flex-col justify-between h-40 hover:border-blue-400/60 transition cursor-pointer group hover:scale-[1.02]"
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              const el = document.getElementById('feeling-checkin-section');
+              if (el) el.scrollIntoView({ behavior: 'smooth' });
+            }
+          }}
+          aria-label="Open daily symptom journal"
+          className="bg-[#192238] border border-blue-500/30 rounded-3xl p-4.5 flex flex-col justify-between h-40 hover:border-blue-400/60 active:scale-[0.97] transition cursor-pointer group hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-blue-800"
         >
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-1.5">

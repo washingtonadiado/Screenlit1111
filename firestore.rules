@@ -69,9 +69,11 @@ service cloud.firestore {
     match /users/{userId} {
       allow get: if isValidId(userId) && (isOwner(userId) || isStaff());
       allow list: if isStaff();
+      // Demo: self registration allows any role so testers can explore all portals.
+      // Production: restrict to patient and caregiver only. Staff are admin provisioned.
       allow create: if isValidId(userId) && (
         isAdmin() ||
-        (isOwner(userId) && incoming().uid == request.auth.uid && incoming().role in ['patient', 'caregiver'])
+        (isOwner(userId) && incoming().uid == request.auth.uid)
       );
       allow update: if isValidId(userId) && (
         isAdmin() ||

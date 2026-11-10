@@ -61,6 +61,7 @@ interface DoctorWorkstationViewProps {
   onRefresh: () => void;
   currentRole: Role;
   currentUid: string;
+  currentDisplayName: string;
 }
 
 export const DoctorWorkstationView: React.FC<DoctorWorkstationViewProps> = ({
@@ -71,6 +72,7 @@ export const DoctorWorkstationView: React.FC<DoctorWorkstationViewProps> = ({
   onRefresh,
   currentRole,
   currentUid,
+  currentDisplayName,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterQueue, setFilterQueue] = useState<
@@ -84,9 +86,12 @@ export const DoctorWorkstationView: React.FC<DoctorWorkstationViewProps> = ({
   const [showMessageModal, setShowMessageModal] = useState(false);
   const [showOverrideModal, setShowOverrideModal] = useState(false);
   const [showTransferModal, setShowTransferModal] = useState(false);
+  const [showAcceptReferralModal, setShowAcceptReferralModal] = useState(false);
 
   // Form states
   const [overrideReason, setOverrideReason] = useState('');
+  const [overrideSubmitting, setOverrideSubmitting] = useState(false);
+  const [overrideSuccess, setOverrideSuccess] = useState(false);
   const [messageBody, setMessageBody] = useState('');
   const [callNotes, setCallNotes] = useState('');
   const [newOwnerUid, setNewOwnerUid] = useState('prac_dr_amina');
@@ -126,7 +131,7 @@ export const DoctorWorkstationView: React.FC<DoctorWorkstationViewProps> = ({
 
   // Helper for patient display information
   const getPatientInfo = (c?: CaseDocument | null) => {
-    if (!c) return { name: 'Tariq Al Mahmoud', age: '56', gender: 'Male', conditionText: 'Stage 2 Hypertension' };
+    if (!c) return { name: currentDisplayName || 'Patient', age: 'N/A', gender: 'N/A', conditionText: 'No active case' };
 
     if (c.patientId === 'pat_fatima_002') {
       return { name: 'Fatima Al Zahra', age: '62', gender: 'Female', conditionText: 'Urgent Crisis Elevation' };
@@ -149,8 +154,12 @@ export const DoctorWorkstationView: React.FC<DoctorWorkstationViewProps> = ({
     if (c.patientId === 'pat_khalid_008') {
       return { name: 'Khalid Al Dossary', age: '50', gender: 'Male', conditionText: 'Rejected Referral Reassigned' };
     }
+    if (c.patientId === 'pat_tariq_001') {
+      return { name: 'Tariq Al Mahmoud', age: '56', gender: 'Male', conditionText: 'Stage 2 Hypertension' };
+    }
 
-    return { name: 'Tariq Al Mahmoud', age: '56', gender: 'Male', conditionText: 'Stage 2 Hypertension' };
+    // Generic fallback for new real patients
+    return { name: c.patientId, age: 'N/A', gender: 'N/A', conditionText: c.condition || 'Hypertension Screening' };
   };
 
   const patient = getPatientInfo(activeCase);
@@ -274,6 +283,50 @@ export const DoctorWorkstationView: React.FC<DoctorWorkstationViewProps> = ({
       a.outcomeDesc?.includes(activeCase?.id || '')
   );
 
+  // Empty state for new users with no cases yet
+  if (cases.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center space-y-5">
+        <div className="w-16 h-16 rounded-3xl bg-gradient-to-tr from-[#3b5bf5] to-[#d4f933] p-0.5">
+          <div className="w-full h-full rounded-3xl bg-[#141923] flex items-center justify-center">
+            <Stethoscope className="w-7 h-7 text-[#d4f933]" />
+          </div>
+        </div>
+        <div className="space-y-1.5">
+          <h2 className="text-xl font-black text-white">
+            Welcome, {currentDisplayName}
+          </h2>
+          <p className="text-sm text-slate-400 max-w-sm leading-relaxed">
+            Your workstation is ready. No patient cases have been assigned to you yet.
+            Cases will appear here once screening results are ingested and routed to your role.
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-3 justify-center text-xs font-bold">
+          <div className="bg-[#141923] border border-slate-800 rounded-2xl px-4 py-3 flex items-center gap-2 text-slate-300">
+            <UserCheck className="w-4 h-4 text-[#d4f933]" />
+            <span>Role: <span className="text-white capitalize">{currentRole}</span></span>
+          </div>
+          <div className="bg-[#141923] border border-slate-800 rounded-2xl px-4 py-3 flex items-center gap-2 text-slate-300">
+            <ShieldCheck className="w-4 h-4 text-emerald-400" />
+            <span>Zero Trust Access Active</span>
+          </div>
+          <div className="bg-[#141923] border border-slate-800 rounded-2xl px-4 py-3 flex items-center gap-2 text-slate-300">
+            <Target className="w-4 h-4 text-[#3b5bf5]" />
+            <span>FHIR R4 Ready</span>
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={onRefresh}
+          className="px-5 py-2.5 bg-[#d4f933] hover:bg-[#c2e726] text-black font-extrabold text-sm rounded-2xl transition flex items-center gap-2"
+        >
+          <RefreshCw className="w-4 h-4" />
+          <span>Refresh Patient Queue</span>
+        </button>
+      </div>
+    );
+  }
+
   // Send quick notification handler
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -335,6 +388,74 @@ export const DoctorWorkstationView: React.FC<DoctorWorkstationViewProps> = ({
       console.error('Failed to transfer case:', err);
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  // Accept referral handler (Referred → ReferralAccepted)
+  const handleAcceptReferral = async () => {
+    if (!activeCase) return;
+    setIsSubmitting(true);
+    try {
+      const res = await fetch('/api/cases/transition', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          caseId: activeCase.id,
+          targetState: 'ReferralAccepted',
+          actorUid: currentUid,
+          actorRole: currentRole,
+          reason: `Referral accepted by ${currentDisplayName} (${currentRole}). Proceeding to appointment scheduling.`,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setShowAcceptReferralModal(false);
+        onRefresh();
+      }
+    } catch (err) {
+      console.error('Failed to accept referral:', err);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Persist AI override to audit log
+  const handleOverrideSubmit = async () => {
+    if (!overrideReason.trim() || !activeCase) return;
+    setOverrideSubmitting(true);
+    setOverrideSuccess(false);
+    try {
+      // Fetch the latest AI ranking output for this case
+      const outputsRes = await fetch('/api/ai/outputs');
+      if (outputsRes.ok) {
+        const outputsData = await outputsRes.json();
+        const caseOutputs = (outputsData.outputs || []).filter(
+          (o: any) => o.inputsRef === `Task/${activeCase.id}` && !o.overridden
+        );
+        const latestOutput = caseOutputs[caseOutputs.length - 1];
+        if (latestOutput) {
+          await fetch('/api/ai/override', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              outputId: latestOutput.id,
+              overriddenBy: currentUid,
+              overrideNote: overrideReason.trim(),
+            }),
+          });
+        }
+      }
+      setOverrideSuccess(true);
+      setTimeout(() => {
+        setShowOverrideModal(false);
+        setOverrideReason('');
+        setOverrideSuccess(false);
+        onRefresh();
+      }, 1000);
+    } catch (err) {
+      console.error('Failed to persist AI override:', err);
+    } finally {
+      setOverrideSubmitting(false);
     }
   };
 
@@ -561,11 +682,25 @@ export const DoctorWorkstationView: React.FC<DoctorWorkstationViewProps> = ({
               <span>Transfer</span>
             </button>
 
+            {/* Accept Referral — visible only when case is Referred and actor is clinician */}
+            {activeCase?.state === 'Referred' &&
+              (currentRole === 'physician' || currentRole === 'specialist' || currentRole === 'admin') && (
+              <button
+                type="button"
+                onClick={() => setShowAcceptReferralModal(true)}
+                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl text-xs font-extrabold transition flex items-center gap-1.5 shadow-lg active:scale-95"
+                title="Accept this referral and proceed to appointment scheduling"
+              >
+                <UserCheck className="w-3.5 h-3.5" />
+                <span>Accept Referral</span>
+              </button>
+            )}
+
             {/* Close Case Button */}
             <button
               type="button"
               onClick={() => setShowClosureModal(true)}
-              className="px-4 py-2 bg-[#d4f933] hover:bg-[#c2e825] text-black rounded-2xl text-xs font-extrabold transition flex items-center gap-1.5 shadow-lg active:scale-95"
+              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl text-xs font-extrabold transition flex items-center gap-1.5 shadow-lg active:scale-95"
               title="Formal Evidence Closure Signoff"
             >
               <PenTool className="w-3.5 h-3.5" />
@@ -1249,17 +1384,86 @@ export const DoctorWorkstationView: React.FC<DoctorWorkstationViewProps> = ({
               />
             </div>
 
+            {overrideSuccess && (
+              <div className="p-3 rounded-xl bg-emerald-950/40 border border-emerald-800 text-emerald-300 text-xs flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
+                <span>Override recorded and logged to AI audit trail.</span>
+              </div>
+            )}
+
             <button
               type="button"
-              onClick={() => {
-                setShowOverrideModal(false);
-                setOverrideReason('');
-                onRefresh();
-              }}
-              className="w-full py-3 bg-[#d4f933] text-black font-extrabold rounded-2xl text-xs shadow-lg"
+              onClick={handleOverrideSubmit}
+              disabled={overrideSubmitting || !overrideReason.trim()}
+              className="w-full py-3 bg-[#d4f933] text-black font-extrabold rounded-2xl text-xs shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Record Clinical Override
+              {overrideSubmitting ? 'Recording Override...' : 'Record Clinical Override'}
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 6: ACCEPT REFERRAL MODAL */}
+      {showAcceptReferralModal && activeCase && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-[#141923] border border-slate-800 rounded-3xl max-w-md w-full p-6 text-white shadow-2xl space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+              <h3 className="font-bold text-base flex items-center gap-2">
+                <UserCheck className="w-5 h-5 text-emerald-400" />
+                Accept Clinical Referral
+              </h3>
+              <button
+                type="button"
+                onClick={() => setShowAcceptReferralModal(false)}
+                className="text-slate-400 hover:text-white"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-4 bg-[#10141d] border border-slate-800 rounded-2xl space-y-2 text-xs">
+              <div className="flex items-center justify-between">
+                <span className="text-slate-400">Case ID</span>
+                <span className="font-bold text-white font-mono">{activeCase.id}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-slate-400">Patient</span>
+                <span className="font-bold text-white">{patient.name}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-slate-400">Condition</span>
+                <span className="font-bold text-white capitalize">{activeCase.condition}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-slate-400">Current State</span>
+                <span className="px-2 py-0.5 rounded-full bg-amber-950/50 text-amber-300 border border-amber-800/60 font-bold">
+                  {activeCase.state}
+                </span>
+              </div>
+            </div>
+
+            <p className="text-xs text-slate-300 leading-relaxed">
+              Accepting this referral will transition the case to <strong className="text-emerald-400">ReferralAccepted</strong> and assign you as the named clinician owner for the next coordination step. An audit event will be recorded.
+            </p>
+
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setShowAcceptReferralModal(false)}
+                className="flex-1 py-3 bg-[#10141d] border border-slate-800 text-slate-300 font-bold rounded-2xl text-xs transition hover:bg-[#161c28]"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleAcceptReferral}
+                disabled={isSubmitting}
+                className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold rounded-2xl text-xs shadow-lg disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                <UserCheck className="w-4 h-4" />
+                {isSubmitting ? 'Accepting...' : 'Accept and Take Ownership'}
+              </button>
+            </div>
           </div>
         </div>
       )}

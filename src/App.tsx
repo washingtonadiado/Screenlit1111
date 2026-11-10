@@ -9,20 +9,16 @@ import { PatientApp } from './components/patient/PatientApp';
 import { CommandCentre } from './components/staff/CommandCentre';
 import { LoginDashboard } from './components/auth/LoginDashboard';
 import {
-  ArrowRight,
   KeyRound,
   LogIn,
   LogOut,
-  Shield,
   Smartphone,
   Stethoscope,
-  User,
-  Users,
 } from 'lucide-react';
 
 function AppContent() {
   const [route, setRoute] = useState<'app' | 'staff' | 'login'>('login');
-  const { currentUser, setCurrentUser, availableUsers, firebaseUser, signInWithGoogle, signOutUser } = useApp();
+  const { currentUser, isAuthenticated, isLoadingAuth, firebaseUser, signInWithGoogle, signOutUser } = useApp();
 
   useEffect(() => {
     const path = window.location.pathname;
@@ -33,35 +29,35 @@ function AppContent() {
     } else if (path.startsWith('/login')) {
       setRoute('login');
     } else {
-      // Check stored preference or default to login dashboard
-      const hasStoredLogin = localStorage.getItem('screenlit_logged_in') === 'true';
-      if (hasStoredLogin) {
-        setRoute('app');
-      } else {
-        setRoute('login');
-      }
+      setRoute('login');
     }
   }, []);
 
+  // Force login route when not authenticated (skip during initial auth load)
+  useEffect(() => {
+    if (!isLoadingAuth && !isAuthenticated && route !== 'login') {
+      setRoute('login');
+    }
+  }, [isAuthenticated, isLoadingAuth, route]);
+
   const switchRoute = (newRoute: 'app' | 'staff' | 'login') => {
+    if (!isAuthenticated && newRoute !== 'login') {
+      setRoute('login');
+      window.history.pushState({}, '', '/login');
+      return;
+    }
     setRoute(newRoute);
     const targetPath = newRoute === 'staff' ? '/staff' : newRoute === 'login' ? '/login' : '/app';
     window.history.pushState({}, '', targetPath);
 
-    if (newRoute === 'staff' && (currentUser.role === 'patient' || currentUser.role === 'caregiver')) {
-      const coordinatorUser = availableUsers.find((u) => u.role === 'coordinator');
-      if (coordinatorUser) {
-        setCurrentUser(coordinatorUser);
-      }
-    } else if (newRoute === 'app' && currentUser.role !== 'patient' && currentUser.role !== 'caregiver') {
-      const patientUser = availableUsers.find((u) => u.role === 'patient');
-      if (patientUser) {
-        setCurrentUser(patientUser);
-      }
-    }
+    // Update page title to reflect active portal
+    const titles = {
+      login: 'Screenlit',
+      app: 'Screenlit Patient Portal',
+      staff: 'Screenlit Clinical Command Centre',
+    };
+    document.title = titles[newRoute];
   };
-
-  const isStaffRole = currentUser.role !== 'patient' && currentUser.role !== 'caregiver';
 
   return (
     <div className="min-h-screen bg-[#070a0f] flex flex-col font-sans text-slate-100">
@@ -125,23 +121,29 @@ function AppContent() {
 
         {/* Current User Session & Firebase Auth Status */}
         <div className="flex items-center gap-2">
-          {/* Active User Persona Pill with Switch Action */}
-          <button
-            type="button"
-            onClick={() => switchRoute('login')}
-            className="flex items-center gap-2 bg-[#141923] hover:bg-[#1a2230] border border-slate-800 rounded-full px-2.5 py-1 text-xs text-slate-300 hover:text-white transition"
-            title="Switch User on Login Dashboard"
-          >
-            <div className="w-4 h-4 rounded-full bg-[#1e2738] flex items-center justify-center text-[10px] font-bold text-[#d4f933]">
-              {currentUser.displayName.charAt(0)}
-            </div>
-            <span className="font-semibold text-[11px] max-w-[120px] truncate hidden md:inline">
-              {currentUser.displayName}
+          {/* Active User Persona Pill */}
+          {isAuthenticated && currentUser.uid ? (
+            <button
+              type="button"
+              onClick={() => switchRoute('login')}
+              className="flex items-center gap-2 bg-[#141923] hover:bg-[#1a2230] border border-slate-800 rounded-full px-2.5 py-1 text-xs text-slate-300 hover:text-white transition"
+              title="Back to Login"
+            >
+              <div className="w-4 h-4 rounded-full bg-[#1e2738] flex items-center justify-center text-[10px] font-bold text-[#d4f933]">
+                {currentUser.displayName.charAt(0)}
+              </div>
+              <span className="font-semibold text-[11px] max-w-[120px] truncate hidden md:inline">
+                {currentUser.displayName}
+              </span>
+              <span className="text-[10px] px-1.5 py-0.2 bg-slate-800 text-slate-300 rounded font-mono uppercase">
+                {currentUser.role}
+              </span>
+            </button>
+          ) : (
+            <span className="text-[11px] text-slate-500 font-semibold hidden sm:inline">
+              Not signed in
             </span>
-            <span className="text-[10px] px-1.5 py-0.2 bg-slate-800 text-slate-300 rounded font-mono uppercase">
-              {currentUser.role}
-            </span>
-          </button>
+          )}
 
           {/* Firebase Authentication Status */}
           {firebaseUser ? (
@@ -181,11 +183,22 @@ function AppContent() {
       </div>
 
       <div className="flex-1">
-        {route === 'login' && (
+        {isLoadingAuth && (
+          <div className="flex items-center justify-center min-h-[60vh]">
+            <div className="text-center">
+              <div className="w-10 h-10 border-2 border-slate-700 border-t-[#d4f933] rounded-full animate-spin mx-auto mb-3" />
+              <p className="text-xs text-slate-400 font-semibold">Loading Screenlit...</p>
+            </div>
+          </div>
+        )}
+        {!isLoadingAuth && route === 'login' && (
           <LoginDashboard onNavigateToPortal={(target) => switchRoute(target)} />
         )}
-        {route === 'app' && <PatientApp />}
-        {route === 'staff' && <CommandCentre />}
+        {!isLoadingAuth && route === 'app' && isAuthenticated && <PatientApp />}
+        {!isLoadingAuth && route === 'staff' && isAuthenticated && <CommandCentre />}
+        {!isLoadingAuth && (route === 'app' || route === 'staff') && !isAuthenticated && (
+          <LoginDashboard onNavigateToPortal={(target) => switchRoute(target)} />
+        )}
       </div>
     </div>
   );

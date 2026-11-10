@@ -6,6 +6,7 @@
  */
 
 import React, { useEffect, useState } from 'react';
+import { AnimatePresence, motion } from 'motion/react';
 import { useApp } from '../../context/AppContext';
 import { CaseDocument, FHIRAuditEvent } from '@shared/types';
 import { DoctorWorkstationView } from './DoctorWorkstationView';
@@ -13,6 +14,8 @@ import { QueuesView } from './QueuesView';
 import { TimelineView } from './TimelineView';
 import { AuditLogView } from './AuditLogView';
 import { OutboxView } from './OutboxView';
+import { PopulationHealthView } from './PopulationHealthView';
+import { DemoClockBar } from './DemoClockBar';
 import {
   Activity,
   ArrowLeft,
@@ -34,9 +37,9 @@ import {
 } from 'lucide-react';
 
 export const CommandCentre: React.FC = () => {
-  const { currentUser, setCurrentUser, availableUsers } = useApp();
+  const { currentUser, signOutUser } = useApp();
   const [activeTab, setActiveTab] = useState<
-    'workstation' | 'queues' | 'timeline' | 'audits' | 'outbox'
+    'workstation' | 'queues' | 'timeline' | 'audits' | 'outbox' | 'population'
   >('workstation');
 
   const [cases, setCases] = useState<CaseDocument[]>([]);
@@ -111,23 +114,19 @@ export const CommandCentre: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2.5">
-          <label className="text-xs font-bold text-slate-400">Staff Identity:</label>
-          <select
-            value={currentUser.uid}
-            onChange={(e) => {
-              const u = availableUsers.find((user) => user.uid === e.target.value);
-              if (u) setCurrentUser(u);
-            }}
-            className="bg-[#10141d] hover:bg-[#161c28] border border-slate-800 rounded-2xl px-3 py-2 text-xs font-bold text-white focus:outline-none focus:border-[#d4f933] transition cursor-pointer"
-          >
-            {availableUsers
-              .filter((u) => u.role !== 'patient' && u.role !== 'caregiver')
-              .map((u) => (
-                <option key={u.uid} value={u.uid}>
-                  {u.displayName} ({u.role})
-                </option>
-              ))}
-          </select>
+          <div className="flex items-center gap-2 bg-[#10141d] border border-slate-800 rounded-2xl px-3 py-2">
+            <div className="w-6 h-6 rounded-lg bg-[#1e2738] flex items-center justify-center text-[10px] font-bold text-[#d4f933]">
+              {currentUser.displayName.charAt(0)}
+            </div>
+            <div className="hidden sm:block">
+              <span className="text-xs font-bold text-white block leading-tight">
+                {currentUser.displayName}
+              </span>
+              <span className="text-[10px] text-slate-400 uppercase tracking-wide">
+                {currentUser.role}
+              </span>
+            </div>
+          </div>
           <button
             type="button"
             onClick={loadData}
@@ -139,19 +138,21 @@ export const CommandCentre: React.FC = () => {
           <button
             type="button"
             onClick={() => {
+              signOutUser();
               window.location.pathname = '/login';
             }}
-            className="px-3 py-2 bg-[#10141d] hover:bg-[#161c28] border border-slate-800 text-slate-300 hover:text-white rounded-2xl transition flex items-center gap-1.5 text-xs font-bold"
-            title="Switch Account on Login Dashboard"
+            className="px-3 py-2 bg-[#10141d] hover:bg-[#161c28] border border-slate-800 text-slate-300 hover:text-rose-400 rounded-2xl transition flex items-center gap-1.5 text-xs font-bold"
+            title="Sign Out"
           >
             <LogIn className="w-3.5 h-3.5 text-[#d4f933]" />
-            <span className="hidden sm:inline">Switch Account</span>
+            <span className="hidden sm:inline">Sign Out</span>
           </button>
         </div>
       </div>
 
       {/* Navigation Tabs Bar */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+      <div className="relative">
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
         <button
           type="button"
           onClick={() => setActiveTab('workstation')}
@@ -216,10 +217,37 @@ export const CommandCentre: React.FC = () => {
           <Smartphone className="w-4 h-4" />
           <span>Notification Outbox</span>
         </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab('population')}
+          className={`px-4 py-2.5 rounded-2xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap ${
+            activeTab === 'population'
+              ? 'bg-[#d4f933] text-black shadow-md'
+              : 'bg-[#141923] text-slate-300 hover:text-white border border-slate-800/80 hover:bg-[#18202d]'
+          }`}
+        >
+          <TrendingUp className="w-4 h-4 text-emerald-400" />
+          <span>Population Health</span>
+        </button>
+        </div>
+        {/* Right fade to indicate overflow tabs */}
+        <div className="pointer-events-none absolute right-0 top-0 bottom-1 w-12 bg-gradient-to-l from-[#070a0f] to-transparent" aria-hidden="true" />
       </div>
+
+      {/* Demo Clock Bar — always visible for judges and testers */}
+      <DemoClockBar onAfterAdvance={loadData} />
 
       {/* Main Tab Views */}
       <div>
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activeTab}
+            initial={{ opacity: 0, y: 5 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.14, ease: 'easeOut' }}
+          >
         {activeTab === 'workstation' && (
           <DoctorWorkstationView
             cases={cases}
@@ -229,6 +257,7 @@ export const CommandCentre: React.FC = () => {
             onRefresh={loadData}
             currentRole={currentUser.role}
             currentUid={currentUser.uid}
+            currentDisplayName={currentUser.displayName}
           />
         )}
 
@@ -266,6 +295,10 @@ export const CommandCentre: React.FC = () => {
         {activeTab === 'audits' && <AuditLogView />}
 
         {activeTab === 'outbox' && <OutboxView />}
+
+        {activeTab === 'population' && <PopulationHealthView />}
+          </motion.div>
+        </AnimatePresence>
       </div>
     </div>
   );

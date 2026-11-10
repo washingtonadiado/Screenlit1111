@@ -34,6 +34,7 @@ import {
   WearableIngestResponse,
 } from './types';
 import { ScreenlitDatabase } from './storage';
+import { AILayer } from './aiLayer';
 
 export class CaseEngine {
   public static ingestObservation(
@@ -253,13 +254,34 @@ export class CaseEngine {
     db.collections.auditEvents.set(auditId, audit);
 
     if (req.targetState === 'PatientNotified') {
+      // Look up the patient's preferred language for a localized message
+      const patientUser = Array.from(db.collections.users.values()).find(
+        (u) => u.linkedPatientId === caseDoc.patientId || u.uid === caseDoc.patientId
+      );
+      const patientLang = patientUser?.language || 'en';
+      const patientName = patientUser?.displayName || 'Patient';
+
+      const draftResult = AILayer.draftPatientMessage(
+        {
+          caseId: caseDoc.id,
+          patientId: caseDoc.patientId,
+          language: patientLang,
+          messageType: 'result_issued',
+          patientName,
+          clinicName: 'Screenlit Health',
+        },
+        db
+      );
+
       const outboxId = `outbox_${Date.now()}_notified`;
       const outboxItem: OutboxItem = {
         id: outboxId,
         to: caseDoc.patientId,
         channel: 'sms',
-        language: 'en',
-        body: 'Action required: Your screening result requires confirmation. Please acknowledge receipt in the Screenlit portal.',
+        language: patientLang,
+        body: draftResult.safetyCheckPassed
+          ? draftResult.messageText
+          : 'Action required: Your screening result requires confirmation. Please acknowledge receipt in the Screenlit portal.',
         status: 'queued',
         patientId: caseDoc.patientId,
         caseId: caseDoc.id,

@@ -284,6 +284,80 @@ app.get('/api/demo/users', (_req: Request, res: Response) => {
   res.json({ users });
 });
 
+app.post('/api/users/register', (req: Request, res: Response) => {
+  const { uid, email, displayName, role, language, linkedPatientId, organizationId } = req.body;
+
+  if (!uid || !email || !displayName || !role) {
+    res.status(400).json({ error: 'Missing required user fields' });
+    return;
+  }
+
+  // Upsert user profile into in-memory store
+  const now = db.getNow().toISOString();
+  const userProfile = {
+    uid,
+    email,
+    displayName,
+    role,
+    language: language || 'en',
+    linkedPatientId: linkedPatientId || (role === 'patient' || role === 'caregiver' ? `pat_${uid.substring(0, 12)}` : undefined),
+    organizationId: organizationId || 'org_alamal_clinic',
+    createdAt: now,
+    updatedAt: now,
+  };
+  db.collections.users.set(uid, userProfile);
+
+  // For patient and caregiver roles, create a FHIR Patient and seed a ResultIssued case
+  if (role === 'patient' || role === 'caregiver') {
+    const patientId = userProfile.linkedPatientId!;
+
+    // Create FHIRPatient if not already present
+    if (!db.collections.patients.has(patientId)) {
+      db.collections.patients.set(patientId, {
+        resourceType: 'Patient',
+        id: patientId,
+        active: true,
+        name: [{ text: displayName, given: [displayName.split(' ')[0]], family: displayName.split(' ').slice(1).join(' ') || '' }],
+        telecom: [{ system: 'email', value: email }],
+        communication: [{ language: { text: language || 'en' }, preferred: true }],
+        generalPractitioner: [{ reference: 'Practitioner/prac_dr_amina' }],
+        managingOrganization: { reference: `Organization/${organizationId || 'org_alamal_clinic'}` },
+      });
+
+      // Create a default active consent
+      const consentId = `${patientId}_${organizationId || 'org_alamal_clinic'}`;
+      db.collections.consents.set(consentId, {
+        resourceType: 'Consent',
+        id: consentId,
+        status: 'active',
+        scope: { text: 'Clinical coordination data sharing' },
+        category: [{ text: 'Care coordination' }],
+        patient: { reference: `Patient/${patientId}`, type: 'Patient' },
+        organization: [{ reference: `Organization/${organizationId || 'org_alamal_clinic'}` }],
+        provision: { type: 'permit' },
+      });
+
+      // Ingest a default actionable screening observation to create a case
+      const result = CaseEngine.ingestObservation(
+        {
+          patientId,
+          systolic: 148,
+          diastolic: 94,
+          performerId: 'prac_coord_fatima',
+          performerRole: 'coordinator',
+          noteText: `Initial registration screening reading for ${displayName}`,
+        },
+        db
+      );
+
+      res.json({ success: true, userProfile, caseCreated: result.caseCreated, caseId: result.caseId });
+      return;
+    }
+  }
+
+  res.json({ success: true, userProfile, caseCreated: false });
+});
+
 app.get('/api/ai/outputs', (_req: Request, res: Response) => {
   const outputs = Array.from(db.collections.aiOutputs.values());
   res.json({ outputs });

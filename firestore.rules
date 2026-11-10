@@ -1,0 +1,203 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isBootstrappedAdmin() {
+      return isSignedIn() && request.auth.token.email == 'washingtonowade200@gmail.com';
+    }
+
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function hasUserRecord() {
+      return isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
+    function userRole() {
+      return hasUserRecord() ? getUserData().role : '';
+    }
+
+    function isAdmin() {
+      return isBootstrappedAdmin() || (hasUserRecord() && userRole() == 'admin');
+    }
+
+    function isStaff() {
+      return isBootstrappedAdmin() || (hasUserRecord() && (userRole() in ['coordinator', 'physician', 'specialist', 'admin']));
+    }
+
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    function isPatientOwner(patId) {
+      return isSignedIn() && (
+        (hasUserRecord() && getUserData().linkedPatientId == patId) ||
+        request.auth.uid == patId
+      );
+    }
+
+    function hasActiveConsent(patId) {
+      return isAdmin() || (
+        hasUserRecord() &&
+        exists(/databases/$(database)/documents/consents/$(patId + '_' + getUserData().organizationId)) &&
+        get(/databases/$(database)/documents/consents/$(patId + '_' + getUserData().organizationId)).data.status == 'active'
+      );
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    match /users/{userId} {
+      allow get: if isValidId(userId) && (isOwner(userId) || isStaff());
+      allow list: if isStaff();
+      allow create: if isValidId(userId) && (
+        isAdmin() ||
+        (isOwner(userId) && incoming().uid == request.auth.uid && incoming().role in ['patient', 'caregiver'])
+      );
+      allow update: if isValidId(userId) && (
+        isAdmin() ||
+        (isOwner(userId) && !incoming().diff(existing()).affectedKeys().hasAny(['role', 'organizationId', 'uid']))
+      );
+      allow delete: if isValidId(userId) && isAdmin();
+    }
+
+    match /patients/{patientId} {
+      allow get: if isValidId(patientId) && (isPatientOwner(patientId) || (isStaff() && hasActiveConsent(patientId)));
+      allow list: if isStaff();
+      allow write: if isValidId(patientId) && isStaff();
+    }
+
+    match /observations/{observationId} {
+      allow get: if isValidId(observationId) && (
+        isPatientOwner(existing().patientId) ||
+        (isStaff() && hasActiveConsent(existing().patientId))
+      );
+      allow list: if isStaff() || (isSignedIn() && hasUserRecord());
+      allow create: if isValidId(observationId) && (
+        isStaff() ||
+        (isSignedIn() && hasUserRecord() && incoming().patientId == getUserData().linkedPatientId)
+      );
+      allow update, delete: if isValidId(observationId) && isStaff();
+    }
+
+    match /feelings/{feelingId} {
+      allow get: if isValidId(feelingId) && (
+        isPatientOwner(existing().patientId) ||
+        (isStaff() && hasActiveConsent(existing().patientId))
+      );
+      allow list: if isStaff() || (isSignedIn() && hasUserRecord());
+      allow create: if isValidId(feelingId) && (
+        isStaff() ||
+        (isSignedIn() && hasUserRecord() && incoming().patientId == getUserData().linkedPatientId)
+      );
+      allow update, delete: if isValidId(feelingId) && isStaff();
+    }
+
+    match /tasks/{taskId} {
+      allow get: if isValidId(taskId) && (isPatientOwner(existing().patientId) || isStaff());
+      allow list: if isStaff() || (isSignedIn() && hasUserRecord());
+      allow write: if isValidId(taskId) && isAdmin();
+    }
+
+    match /consents/{consentId} {
+      allow get: if isValidId(consentId) && (isPatientOwner(existing().patientId) || isStaff());
+      allow list: if isStaff() || (isSignedIn() && hasUserRecord());
+      allow create, update: if isValidId(consentId) && (
+        isPatientOwner(incoming().patientId) || isStaff()
+      );
+      allow delete: if isValidId(consentId) && isAdmin();
+    }
+
+    match /auditEvents/{auditEventId} {
+      allow get, list: if isValidId(auditEventId) && isStaff();
+      allow write: if isValidId(auditEventId) && isAdmin();
+    }
+
+    match /outbox/{outboxId} {
+      allow get: if isValidId(outboxId) && (isPatientOwner(existing().patientId) || isStaff());
+      allow list: if isStaff();
+      allow write: if isValidId(outboxId) && isAdmin();
+    }
+
+    match /aiOutputs/{aiOutputId} {
+      allow get, list: if isValidId(aiOutputId) && isStaff();
+      allow update: if isValidId(aiOutputId) && isStaff() &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['overridden', 'overriddenBy', 'overrideNote']);
+      allow create, delete: if isValidId(aiOutputId) && isAdmin();
+    }
+
+    match /practitioners/{practitionerId} {
+      allow read: if isValidId(practitionerId) && isSignedIn();
+      allow write: if isValidId(practitionerId) && isStaff();
+    }
+
+    match /organizations/{organizationId} {
+      allow read: if isValidId(organizationId) && isSignedIn();
+      allow write: if isValidId(organizationId) && isStaff();
+    }
+
+    match /coverages/{coverageId} {
+      allow read: if isValidId(coverageId) && isSignedIn();
+      allow write: if isValidId(coverageId) && isStaff();
+    }
+
+    match /devices/{deviceId} {
+      allow read: if isValidId(deviceId) && isSignedIn();
+      allow write: if isValidId(deviceId) && isStaff();
+    }
+
+    match /diagnosticReports/{reportId} {
+      allow read: if isValidId(reportId) && (isPatientOwner(existing().patientId) || isStaff());
+      allow write: if isValidId(reportId) && isStaff();
+    }
+
+    match /serviceRequests/{serviceRequestId} {
+      allow read: if isValidId(serviceRequestId) && (isPatientOwner(existing().patientId) || isStaff());
+      allow write: if isValidId(serviceRequestId) && isStaff();
+    }
+
+    match /appointments/{appointmentId} {
+      allow read: if isValidId(appointmentId) && (isPatientOwner(existing().patientId) || isStaff());
+      allow write: if isValidId(appointmentId) && (isPatientOwner(incoming().patientId) || isStaff());
+    }
+
+    match /carePlans/{carePlanId} {
+      allow read: if isValidId(carePlanId) && (isPatientOwner(existing().patientId) || isStaff());
+      allow write: if isValidId(carePlanId) && isStaff();
+    }
+
+    match /communications/{communicationId} {
+      allow read: if isValidId(communicationId) && (isPatientOwner(existing().patientId) || isStaff());
+      allow write: if isValidId(communicationId) && (isPatientOwner(incoming().patientId) || isStaff());
+    }
+
+    match /config/{configId} {
+      allow read: if isValidId(configId) && isSignedIn();
+      allow write: if isValidId(configId) && isAdmin();
+    }
+
+    match /simulationRuns/{runId} {
+      allow read: if isValidId(runId) && isSignedIn();
+      allow write: if isValidId(runId) && isAdmin();
+    }
+  }
+}

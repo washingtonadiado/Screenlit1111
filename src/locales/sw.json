@@ -1,0 +1,130 @@
+{
+  "_meta": {
+    "language": "Kiswahili",
+    "code": "sw",
+    "dir": "ltr",
+    "nativeReviewStatus": "Swahili translation requires native clinical review"
+  },
+  "app": {
+    "title": "Screenlit",
+    "tagline": "Kuziba pengo kati ya uchunguzi na matibabu"
+  },
+  "nav": {
+    "home": "Nyumbani",
+    "result": "Matokeo Yangu",
+    "readings": "Weka Kipimo",
+    "wearable": "Kikuku",
+    "appointments": "Miadi",
+    "carePlan": "Mpango wa Afya",
+    "consent": "Faragha & Ushiriki",
+    "messages": "Ujumbe",
+    "statistics": "Takwimu",
+    "schedule": "Ratiba",
+    "settings": "Mipangilio"
+  },
+  "home": {
+    "welcome": "Karibu tena",
+    "caregiverBanner": "Mwonekano wa Mlezi: Unasimamia afya kwa niaba ya",
+    "nextStepTitle": "Hatua Yako Inayofuata",
+    "acknowledgePrompt": "Tafadhali thibitisha umekagua matokeo yako ya hivi karibuni",
+    "acknowledgeButton": "Kagua na Thibitisha",
+    "repeatReadingPrompt": "Kipimo cha pili kinahitajika kuthibitisha shinikizo la damu",
+    "repeatReadingButton": "Weka Kipimo cha Kurudia",
+    "appointmentPrompt": "Miadi yako ya kliniki imethibitishwa",
+    "viewAppointmentButton": "Tazama Maelezo ya Miadi",
+    "surveillancePrompt": "Weka kipimo chako cha asubuhi cha shinikizo la damu",
+    "logReadingButton": "Weka Kipimo Sasa",
+    "caseClosedTitle": "Shinikizo la Damu Limedhibitiwa",
+    "caseClosedMessage": "Hongera sana. Shinikizo lako la damu limethibitishwa kudhibitiwa chini ya viwango vinavyotakiwa.",
+    "urgentWarning": "Muhimu: Kipimo chako kilikuwa cha juu sana. Daktari wako amearifiwa mara moja.",
+    "quickStats": "Muhtasari wa Afya Yako",
+    "lastReading": "Kipimo cha Hivi Karibuni",
+    "heartRate": "Mapigo ya Moyo Ukiwa Tulivu",
+    "activeCaseOwner": "Mratibu wa Afya"
+  },
+  "result": {
+    "title": "Kuelewa Matokeo Yako",
+    "readingLabel": "Kipimo cha Awali cha Shinikizo la Damu",
+    "systolicExplain": "Nambari ya juu (Sistoliki): Shinikizo wakati moyo unapiga",
+    "diastolicExplain": "Nambari ya chini (Diastoliki): Shinikizo wakati moyo unapumzika kati ya mapigo",
+    "whatItMeans": "Hii inamaanisha nini kwako?",
+    "whatItMeansBody": "Kipimo kimoja cha juu hakimaanishi kuwa una ugonjwa wa kudumu. Shinikizo la damu hubadilika siku nzima. Hiyo ndiyo sababu kipimo cha pili cha uthibitisho na ushauri wa daktari unahitajika.",
+    "guidelineDisclaimer": "Viwango vya kitabibu vinapaswa kuthibitishwa na daktari kulingana na miongozo iliyochaguliwa.",
+    "nextStepsHeader": "Nini kinafuata sasa?",
+    "nextStep1": "Unathibitisha kupokea matokeo haya hapa chini.",
+    "nextStep2": "Mratibu wetu wa afya atakusaidia kupanga miadi.",
+    "nextStep3": "Daktari atakuchunguza na kukubaliana nawe mpango mzuri wa matibabu."
+  },
+  "ack": {
+    "title": "Thibitisha Matokeo Yako",
+    "questionPrompt": "Uthibitisho wa Uelewa wa Haraka",
+    "question": "Ni hatua gani kuu inayofuata baada ya kupata kipimo hiki cha juu?",
+    "opt1": "Kupuuza kwa sababu kipimo kimoja hakina umuhimu",
+    "opt2": "Kuthibitisha na kipimo cha pili na kujadiliana na mtoa huduma za afya",
+    "opt3": "Kuacha kutumia dawa zote zilizoandikwa mara moja",
+    "confirmButton": "Nimeelewa na Ninathibitisha",
+    "successMessage": "Asante sana. Uthibitisho wako umerekodiwa kwenye faili lako la matibabu."
+  },
+  "reading": {
+    "title": "Weka Kipimo cha Shinikizo la Damu",
+    "subtitle": "Tumia kifaa cha kupimia cha mkono wa juu kilichoidhinishwa",
+    "systolicLabel": "Sistoliki (Nambari ya juu)",
+    "diastolicLabel": "Diastoliki (Nambari ya chini)",
+    "pulseLabel": "Mapigo ya Moyo (Kwa dakika)",
+    "noteLabel": "Maelezo ya ziada (Hiari)",
+    "submitButton": "Hifadhi Kipimo",
+    "successAlert": "Kipimo kimehifadhiwa kikamilifu",
+    "cuffReminder": "Pumzika kwa utulivu kwa dakika 5 kabla ya kuchukua kipimo."
+  },
+  "wearable": {
+    "title": "Mienendo ya Kikuku Mahiri",
+    "deviceName": "Kikuku cha HealthBand Pulse 4",
+    "connectedStatus": "Kimeunganishwa na Kinatuma Data",
+    "disclaimer": "Vikuku mahiri havipimi shinikizo la damu. Ni viashiria vya ukaguzi tu na havijathibitishwa kitabibu.",
+    "restingHeartRate": "Mapigo ya Moyo Ukiwa Tulivu",
+    "oxygenLevel": "Kiwango cha Oksijeni (SpO2)",
+    "skinTemp": "Joto la Ngozi",
+    "sleepDuration": "Muda wa Usingizi",
+    "activitySteps": "Hatua za Siku",
+    "baselineNormal": "Viashiria viko ndani ya kiwango cha kawaida",
+    "baselineShift": "Mabadiliko yameonekana. Timu ya afya imearifiwa kwa ukaguzi."
+  },
+  "consent": {
+    "title": "Faragha na Ushiriki wa Data",
+    "subtitle": "Unadhibiti vituo vya afya na hospitali zinazoweza kutazama rekodi zako za afya",
+    "activeProviders": "Vituo vya Afya Vilivyoidhinishwa",
+    "togglePermit": "Ushiriki Umeruhusiwa",
+    "toggleDeny": "Ushiriki Umezuiwa",
+    "caregiverTitle": "Uwakilishi wa Mlezi",
+    "caregiverSubtitle": "Mwanafamilia aliyeteuliwa kusimamia huduma",
+    "revokeCaregiver": "Batilisha Ruhusa ya Mlezi",
+    "caregiverRevokedAlert": "Ruhusa ya mlezi imebatilishwa kikamilifu."
+  },
+  "appointments": {
+    "title": "Miadi Yako ya Matibabu",
+    "upcoming": "Miadi Inayokuja ya Ushauri",
+    "doctor": "Daktari",
+    "location": "Mahali",
+    "time": "Tarehe & Muda",
+    "reminderActive": "Vikumbusho vya SMS na arifa vimewezeshwa"
+  },
+  "carePlan": {
+    "title": "Mpango Wako Binafsi wa Afya",
+    "condition": "Hali: Shinikizo la Damu la Hatua ya 1",
+    "goals": "Malengo ya Matibabu",
+    "goal1": "Kudumisha shinikizo la damu chini ya 140/90 mmHg",
+    "goal2": "Kutembea kwa kasi ya wastani dakika 30 kila siku",
+    "goal3": "Kupunguza chumvi kwenye chakula chini ya gramu 2 kila siku",
+    "medications": "Dawa Zilizoidhinishwa",
+    "med1": "Amlodipine 5mg mara moja kila asubuhi"
+  },
+  "common": {
+    "save": "Hifadhi",
+    "cancel": "Ghairi",
+    "back": "Rudi",
+    "status": "Hali",
+    "urgent": "Dharura",
+    "actionable": "Inahitaji Hatua",
+    "controlled": "Imedhibitiwa"
+  }
+}

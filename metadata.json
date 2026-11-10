@@ -1,0 +1,6 @@
+{
+  "name": "Screenlit",
+  "description": "Mobile first clinical coordination system closing the screening to care loop for population health",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,130 @@
+{
+  "_meta": {
+    "language": "English",
+    "code": "en",
+    "dir": "ltr",
+    "nativeReviewStatus": "Verified"
+  },
+  "app": {
+    "title": "Screenlit",
+    "tagline": "Closing the screening to care loop"
+  },
+  "nav": {
+    "home": "Home",
+    "result": "My Result",
+    "readings": "Log Reading",
+    "wearable": "Wristband",
+    "appointments": "Visits",
+    "carePlan": "Care Plan",
+    "consent": "Privacy & Sharing",
+    "messages": "Messages",
+    "statistics": "Statistics",
+    "schedule": "Schedule",
+    "settings": "Settings"
+  },
+  "home": {
+    "welcome": "Welcome back",
+    "caregiverBanner": "Caregiver View: You are managing care on behalf of",
+    "nextStepTitle": "Your Next Step",
+    "acknowledgePrompt": "Please confirm you reviewed your recent screening result",
+    "acknowledgeButton": "Review and Acknowledge",
+    "repeatReadingPrompt": "A repeat reading is required to confirm your blood pressure",
+    "repeatReadingButton": "Enter Repeat Reading",
+    "appointmentPrompt": "Your upcoming clinic appointment is confirmed",
+    "viewAppointmentButton": "View Appointment Details",
+    "surveillancePrompt": "Log your morning blood pressure cuff reading",
+    "logReadingButton": "Enter Reading Now",
+    "caseClosedTitle": "Blood Pressure Controlled",
+    "caseClosedMessage": "Congratulations. Your blood pressure is confirmed controlled under clinical guideline targets.",
+    "urgentWarning": "Important: Your reading was significantly elevated. Your doctor has been notified.",
+    "quickStats": "Your Health Summary",
+    "lastReading": "Latest Blood Pressure",
+    "heartRate": "Resting Heart Rate",
+    "activeCaseOwner": "Care Coordinator"
+  },
+  "result": {
+    "title": "Understanding Your Result",
+    "readingLabel": "Screening Blood Pressure",
+    "systolicExplain": "Top number (Systolic): Pressure when your heart beats",
+    "diastolicExplain": "Bottom number (Diastolic): Pressure when your heart rests between beats",
+    "whatItMeans": "What does this mean for you?",
+    "whatItMeansBody": "A single elevated reading does not mean you have a permanent condition. Blood pressure changes throughout the day. That is why a repeat confirmation reading and doctor consultation are needed.",
+    "guidelineDisclaimer": "Clinical thresholds are to be confirmed by a clinician against the chosen guideline.",
+    "nextStepsHeader": "What happens next?",
+    "nextStep1": "You acknowledge this result below.",
+    "nextStep2": "Our nurse coordinator assists you with scheduling.",
+    "nextStep3": "A doctor reviews your health and agrees on a care plan with you."
+  },
+  "ack": {
+    "title": "Acknowledge Your Result",
+    "questionPrompt": "Quick Understanding Check",
+    "question": "What is the primary next step after receiving this elevated reading?",
+    "opt1": "Ignore it because one reading does not matter",
+    "opt2": "Confirm with a repeat reading and discuss with a clinical provider",
+    "opt3": "Stop taking all prescribed medicines immediately",
+    "confirmButton": "I Understand and Acknowledge",
+    "successMessage": "Thank you. Your acknowledgement has been recorded in your care file."
+  },
+  "reading": {
+    "title": "Log Blood Pressure Cuff Reading",
+    "subtitle": "Use a validated upper arm cuff monitor",
+    "systolicLabel": "Systolic (Top number)",
+    "diastolicLabel": "Diastolic (Bottom number)",
+    "pulseLabel": "Pulse (Beats per minute)",
+    "noteLabel": "Notes (Optional)",
+    "submitButton": "Save Reading",
+    "successAlert": "Reading recorded successfully",
+    "cuffReminder": "Rest quietly for 5 minutes before taking your measurement."
+  },
+  "wearable": {
+    "title": "Continuous Health Signals",
+    "deviceName": "HealthBand Pulse 4 Wristband",
+    "connectedStatus": "Connected and Syncing",
+    "disclaimer": "Wearable wristbands do not measure blood pressure. Review prompts only. Not clinically validated.",
+    "restingHeartRate": "Resting Heart Rate",
+    "oxygenLevel": "Blood Oxygen (SpO2)",
+    "skinTemp": "Skin Temperature",
+    "sleepDuration": "Sleep Duration",
+    "activitySteps": "Daily Steps",
+    "baselineNormal": "Signals within normal baseline range",
+    "baselineShift": "Signal deviation noticed. Clinical team notified for review."
+  },
+  "consent": {
+    "title": "Privacy and Data Sharing",
+    "subtitle": "You control which clinics and hospitals can view your health records",
+    "activeProviders": "Authorized Health Organizations",
+    "togglePermit": "Sharing Allowed",
+    "toggleDeny": "Sharing Denied",
+    "caregiverTitle": "Caregiver Delegation",
+    "caregiverSubtitle": "Designated family member with delegated access",
+    "revokeCaregiver": "Revoke Caregiver Access",
+    "caregiverRevokedAlert": "Caregiver access has been successfully revoked."
+  },
+  "appointments": {
+    "title": "Your Medical Visits",
+    "upcoming": "Upcoming Consultation",
+    "doctor": "Clinician",
+    "location": "Location",
+    "time": "Date & Time",
+    "reminderActive": "SMS and push reminders enabled"
+  },
+  "carePlan": {
+    "title": "Your Personalized Care Plan",
+    "condition": "Condition: Stage 1 Hypertension",
+    "goals": "Treatment Goals",
+    "goal1": "Maintain blood pressure below 140/90 mmHg",
+    "goal2": "Complete 30 minutes of moderate walking daily",
+    "goal3": "Limit dietary sodium to less than 2 grams daily",
+    "medications": "Prescribed Medications",
+    "med1": "Amlodipine 5mg once daily each morning"
+  },
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "back": "Back",
+    "status": "Status",
+    "urgent": "Urgent",
+    "actionable": "Actionable",
+    "controlled": "Controlled"
+  }
+}

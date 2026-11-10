@@ -1,0 +1,247 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User profile with role assignment, preferred language, and clinical affiliation",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "maxLength": 128 },
+        "email": { "type": "string", "maxLength": 254 },
+        "displayName": { "type": "string", "maxLength": 120 },
+        "role": {
+          "type": "string",
+          "enum": ["patient", "caregiver", "coordinator", "physician", "specialist", "admin"]
+        },
+        "language": {
+          "type": "string",
+          "enum": ["en", "ar", "sw"]
+        },
+        "linkedPatientId": { "type": "string", "maxLength": 128 },
+        "organizationId": { "type": "string", "maxLength": 128 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email", "displayName", "role", "language", "createdAt", "updatedAt"]
+    },
+    "PatientResource": {
+      "title": "PatientResource",
+      "description": "Synthetic FHIR R4 Patient entity with index fields",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "patientId": { "type": "string", "maxLength": 128 },
+        "organizationId": { "type": "string", "maxLength": 128 },
+        "resource": { "type": "object" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "patientId", "resource"]
+    },
+    "ObservationResource": {
+      "title": "ObservationResource",
+      "description": "Synthetic FHIR R4 Observation entity storing vital signs and screening readings",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "patientId": { "type": "string", "maxLength": 128 },
+        "code": { "type": "string", "maxLength": 64 },
+        "status": { "type": "string", "maxLength": 32 },
+        "systolic": { "type": "number" },
+        "diastolic": { "type": "number" },
+        "isActionable": { "type": "boolean" },
+        "isUrgent": { "type": "boolean" },
+        "resource": { "type": "object" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "patientId", "resource"]
+    },
+    "TaskResource": {
+      "title": "TaskResource",
+      "description": "Synthetic FHIR R4 Task representing an actionable case in the state machine",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "state": { "type": "string", "maxLength": 64 },
+        "patientId": { "type": "string", "maxLength": 128 },
+        "ownerRole": { "type": "string", "maxLength": 32 },
+        "ownerUid": { "type": "string", "maxLength": 128 },
+        "dueAt": { "type": "string", "format": "date-time" },
+        "riskScore": { "type": "number" },
+        "condition": { "type": "string", "maxLength": 64 },
+        "isUrgent": { "type": "boolean" },
+        "evidence": { "type": "object" },
+        "resource": { "type": "object" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "state", "patientId", "ownerRole", "ownerUid", "resource"]
+    },
+    "ConsentResource": {
+      "title": "ConsentResource",
+      "description": "Synthetic FHIR R4 Consent controlling organization access to patient records",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "patientId": { "type": "string", "maxLength": 128 },
+        "organizationId": { "type": "string", "maxLength": 128 },
+        "status": { "type": "string", "enum": ["active", "inactive", "rejected"] },
+        "resource": { "type": "object" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "patientId", "organizationId", "status", "resource"]
+    },
+    "AuditEventResource": {
+      "title": "AuditEventResource",
+      "description": "Immutable FHIR R4 AuditEvent logging all state changes and access events",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "caseId": { "type": "string", "maxLength": 128 },
+        "actorUid": { "type": "string", "maxLength": 128 },
+        "actorRole": { "type": "string", "maxLength": 32 },
+        "action": { "type": "string", "maxLength": 16 },
+        "recorded": { "type": "string", "format": "date-time" },
+        "reason": { "type": "string", "maxLength": 500 },
+        "resource": { "type": "object" }
+      },
+      "required": ["id", "actorUid", "actorRole", "action", "recorded", "resource"]
+    },
+    "OutboxResource": {
+      "title": "OutboxResource",
+      "description": "Simulated SMS and web push message dispatch log",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "to": { "type": "string", "maxLength": 64 },
+        "channel": { "type": "string", "enum": ["sms", "push"] },
+        "language": { "type": "string", "enum": ["en", "ar", "sw"] },
+        "body": { "type": "string", "maxLength": 1000 },
+        "status": { "type": "string", "enum": ["queued", "sent", "delivered", "failed"] },
+        "patientId": { "type": "string", "maxLength": 128 },
+        "caseId": { "type": "string", "maxLength": 128 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "to", "channel", "body", "status", "patientId"]
+    },
+    "AIOutputResource": {
+      "title": "AIOutputResource",
+      "description": "Transparent AI outputs with model version, reason, inputs reference, and override audit",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "taskType": { "type": "string", "maxLength": 64 },
+        "reason": { "type": "string", "maxLength": 500 },
+        "modelVersion": { "type": "string", "maxLength": 64 },
+        "inputsRef": { "type": "string", "maxLength": 128 },
+        "rawOutput": { "type": "object" },
+        "overridden": { "type": "boolean" },
+        "overriddenBy": { "type": "string", "maxLength": 128 },
+        "overrideNote": { "type": "string", "maxLength": 500 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "taskType", "reason", "modelVersion", "inputsRef", "createdAt"]
+    },
+    "FeelingResource": {
+      "title": "FeelingResource",
+      "description": "Patient self reported feeling logs with optional voice transcription and symptom analysis",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "patientId": { "type": "string", "maxLength": 128 },
+        "recordedAt": { "type": "string", "format": "date-time" },
+        "feelingScore": {
+          "type": "string",
+          "enum": ["great", "good", "okay", "unwell", "concerning"]
+        },
+        "feelingNote": { "type": "string", "maxLength": 2000 },
+        "transcribedFromVoice": { "type": "boolean" },
+        "tags": { "type": "array" },
+        "symptoms": { "type": "array" },
+        "aiAnalysis": { "type": "object" }
+      },
+      "required": ["id", "patientId", "recordedAt", "feelingScore"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "UserProfile" },
+      "description": "User profiles and assigned operational roles"
+    },
+    "/patients/{patientId}": {
+      "schema": { "$ref": "PatientResource" },
+      "description": "FHIR Patient documents and demographic records"
+    },
+    "/practitioners/{practitionerId}": {
+      "schema": "object",
+      "description": "FHIR Practitioner professional profiles"
+    },
+    "/organizations/{organizationId}": {
+      "schema": "object",
+      "description": "FHIR Organization directory for clinics and hospitals"
+    },
+    "/coverages/{coverageId}": {
+      "schema": "object",
+      "description": "FHIR Coverage insurance network documents"
+    },
+    "/devices/{deviceId}": {
+      "schema": "object",
+      "description": "FHIR Device records for cuff monitors and wearables"
+    },
+    "/observations/{observationId}": {
+      "schema": { "$ref": "ObservationResource" },
+      "description": "FHIR Observation vitals and laboratory results"
+    },
+    "/diagnosticReports/{reportId}": {
+      "schema": "object",
+      "description": "FHIR DiagnosticReport documents"
+    },
+    "/tasks/{taskId}": {
+      "schema": { "$ref": "TaskResource" },
+      "description": "FHIR Task cases representing active screening coordination workflows"
+    },
+    "/serviceRequests/{serviceRequestId}": {
+      "schema": "object",
+      "description": "FHIR ServiceRequest clinical referrals"
+    },
+    "/appointments/{appointmentId}": {
+      "schema": "object",
+      "description": "FHIR Appointment scheduled visits"
+    },
+    "/carePlans/{carePlanId}": {
+      "schema": "object",
+      "description": "FHIR CarePlan management protocols"
+    },
+    "/communications/{communicationId}": {
+      "schema": "object",
+      "description": "FHIR Communication message history"
+    },
+    "/consents/{consentId}": {
+      "schema": { "$ref": "ConsentResource" },
+      "description": "FHIR Consent records controlling clinical access rights"
+    },
+    "/auditEvents/{auditEventId}": {
+      "schema": { "$ref": "AuditEventResource" },
+      "description": "Immutable FHIR AuditEvent transition trail"
+    },
+    "/outbox/{outboxId}": {
+      "schema": { "$ref": "OutboxResource" },
+      "description": "Simulated notifications queue"
+    },
+    "/aiOutputs/{aiOutputId}": {
+      "schema": { "$ref": "AIOutputResource" },
+      "description": "Transparent AI outputs and overrides"
+    },
+    "/config/{configDocId}": {
+      "schema": "object",
+      "description": "System thresholds, SLA settings, and demo clock"
+    },
+    "/simulationRuns/{runId}": {
+      "schema": "object",
+      "description": "Population health simulation runs and metrics"
+    },
+    "/feelings/{feelingId}": {
+      "schema": { "$ref": "FeelingResource" },
+      "description": "Patient self reported feeling and voice checkin logs"
+    }
+  }
+}

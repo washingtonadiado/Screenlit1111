@@ -10,3 +10,9 @@ coverage/
 firebase-export/
 firestore-debug.log
 ui-debug.log
+
+# Firebase runtime config — contains Web API key, project IDs, OAuth client IDs.
+# Firebase Web API keys are designed to be client-side and are not server secrets,
+# but we exclude this file from future projects to follow least-exposure practice.
+# The committed version is intentional for this AI Studio demo environment.
+# firebase-applet-config.json

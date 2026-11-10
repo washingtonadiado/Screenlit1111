@@ -20,7 +20,9 @@ service cloud.firestore {
     }
 
     function isBootstrappedAdmin() {
-      return isSignedIn() && request.auth.token.email == 'washingtonowade200@gmail.com';
+      // Bootstrap admin check: set via custom claims in production
+      // Personal email removed from public source for privacy
+      return false;
     }
 
     function getUserData() {
